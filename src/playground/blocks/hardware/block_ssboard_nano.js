@@ -19,7 +19,6 @@ Entry.ssboard_nano = {
 
     setZero: () => {
         ///  하드웨어 초기화 로직
-        const rgbled_0 = [];
         if (!Entry.hw.sendQueue.SET) {
             Entry.hw.sendQueue = {
                 GET: {},
@@ -35,9 +34,11 @@ Entry.ssboard_nano = {
         Entry.hw.update();
         lmotor_speed = 0;
         rmotor_speed = 0;
-        rgbled_r = rgbled_0;
-        rgbled_g = rgbled_0;
-        rgbled_b = rgbled_0;
+        for (var i = 0; i < 255; i++) {
+            rgbled_r[i] = 0;
+            rgbled_g[i] = 0;
+            rgbled_b[i] = 0;
+        }
     },
     Static: {
 //        ssboard_nano_BLOCK_COLOR: '#00979D', // gray(#848484)
@@ -283,7 +284,7 @@ Entry.ssboard_nano.getBlocks = function() {
                         ['7', '7'],
                         ['8', '8'],
                     ],
-                    value: '3',
+                    value: '5',
                     fontSize: 11,
                     bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
                     arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
@@ -369,6 +370,43 @@ Entry.ssboard_nano.getBlocks = function() {
                         ['KEY_B', '11'],
 
                     ],
+                    value: '3',       // 기본 표시값
+                    fontSize: 11,
+                    bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
+                    arrowColor: EntryStatic.colorSet.arrow.default.HARDWARE,
+                    arrowColor: EntryStatic.ARROW_COLOR_HW,
+                },
+            ],
+            events: {},
+            def: {
+                params: [null],
+            },
+            paramsKeyMap: {
+                PORT: 0,
+            },
+            func: (sprite, script) => {
+                return script.getStringField('PORT');
+            },
+        },
+        ssboard_nano_digital_out_port_list: {
+            color: EntryStatic.colorSet.block.default.HARDWARE,
+            outerLine: EntryStatic.colorSet.block.darken.HARDWARE,			
+            fontColor: '#fff',			
+            skeleton: 'basic_string_field',
+            statements: [],
+            template: '%1',
+            params: [
+                {
+                    type: 'Dropdown',
+                    options: [
+                        ['D3', '3'],
+                        ['D4', '4'],
+                        ['D5', '5'],
+                        ['D13', '13'],
+                        ['A0', '14'],
+                        ['A1', '15'],
+                        ['A2', '16'],
+                     ],
                     value: '3',       // 기본 표시값
                     fontSize: 11,
                     bgColor: EntryStatic.colorSet.block.darken.HARDWARE,
@@ -660,11 +698,11 @@ Entry.ssboard_nano.getBlocks = function() {
             class: 'ssboard_nano_LV1',
             isNotFor: ['ssboard_nano'],
             func: (sprite, script) => {
-                var port = 10;
-                var duration = script.getNumberValue('VALUE');	// 길이	
-                var octave = 5;    // 옥타브
-                var value = 2400;//698;   // 음 주파수
-                var mode = 1;
+                const port = 10;
+                let duration = script.getNumberValue('VALUE');	// 길이	
+                //var octave = 5;    // 옥타브
+                const value = 2400;//698;   // 음 주파수
+                //var mode = 1;
 
                 if (!script.isStart) {
                     if (!Entry.hw.sendQueue.SET) {
@@ -689,7 +727,7 @@ Entry.ssboard_nano.getBlocks = function() {
                         data: 
                         {
                             value: value,
-                            duration: duration/10,
+                            duration: duration / 10,
                         },
                         time: new Date().getTime(),
                     };
@@ -758,7 +796,7 @@ Entry.ssboard_nano.getBlocks = function() {
                     },
                     {
                         type: 'text',
-                        params: ['1'],
+                        params: ['0.25'],
                     },
                     null,
                 ],
@@ -816,7 +854,7 @@ Entry.ssboard_nano.getBlocks = function() {
                         data: 
 						{
                             value: value,
-                            duration: duration/10,
+                            duration: duration / 10,
                         },
                         time: new Date().getTime(),
                     };
@@ -1014,7 +1052,7 @@ Entry.ssboard_nano.getBlocks = function() {
             def: {
                 params: [
                     {
-                        type: 'ssboard_nano_digital_port_list',
+                        type: 'ssboard_nano_digital_out_port_list',
                     },
                     {
                         type: 'number',
@@ -1117,7 +1155,7 @@ Entry.ssboard_nano.getBlocks = function() {
                                     break;					
 						case 6: 	rLED = 255; gLED = 0;	bLED = 255;	// Magenta
                                     break;
-                        case 6: 	rLED = 0; gLED = 0;	bLED = 0;	    // 끄기
+                        case 7: 	rLED = 0; gLED = 0;	bLED = 0;	    // 끄기
                                     break;
 				}
                 
@@ -1144,7 +1182,7 @@ Entry.ssboard_nano.getBlocks = function() {
                         script.timeFlag = 1;    // 시간플래그 셋
                         setTimeout(() => {
                             script.timeFlag = 0;
-                        }, delay_time );
+                        }, delay_time + 110 );
                         return script;
                     } else if (script.timeFlag == 1) {
                         return script;
@@ -1190,7 +1228,7 @@ Entry.ssboard_nano.getBlocks = function() {
             def: {
                 params: [
                     {
-                        type: 'ssboard_nano_digital_port_list', 
+                        type: 'ssboard_nano_digital_out_port_list', 
                         params: ['4'],
                     },
                     {
@@ -1306,23 +1344,38 @@ Entry.ssboard_nano.getBlocks = function() {
                 const ledmode = 7;
 
                 if(!(rgbled_r[port] == rLED) || !(rgbled_g[port] == gLED) || !(rgbled_b[port] == bLED)) {
-                    if (!Entry.hw.sendQueue.SET) {
-                        Entry.hw.sendQueue.SET = {};
+                    if (!script.isStart) {
+                        if (!Entry.hw.sendQueue.SET) {
+                            Entry.hw.sendQueue.SET = {};
+                        }
+                        Entry.hw.sendQueue.SET[port] = {
+                            type: Entry.ssboard_nano.sensorTypes.RGBLED,
+                            data: {
+                                r: rLED,
+                                g: gLED,
+                                b: bLED,
+                                mode: ledmode,
+                            },
+                            time: new Date().getTime(),
+                        };
+                        
+                        script.isStart = true;  // 출력 시작 플래그 셋
+                        script.timeFlag = 1;    // 시간플래그 셋
+                        setTimeout(() => {
+                            script.timeFlag = 0;
+                        }, 100 );
+                        return script;
+                    } else if (script.timeFlag == 1) {
+                        return script;
+                    } else {// 설정 시간이 지나면 출력 리셋
+                        rgbled_r[port] = rLED;
+                        rgbled_g[port] = gLED;
+                        rgbled_b[port] = bLED;
+                        delete script.timeFlag;
+                        delete script.isStart;
+                        Entry.engine.isContinue = false;
+                        return script.callReturn();
                     }
-                    Entry.hw.sendQueue.SET[port] = {
-                        type: Entry.ssboard_nano.sensorTypes.RGBLED,
-                        data: {
-                            r: rLED,
-                            g: gLED,
-                            b: bLED,
-                            mode: ledmode,
-                        },
-                        time: new Date().getTime(),
-                    };
-                    rgbled_r[port] = rLED;
-                    rgbled_g[port] = gLED;
-                    rgbled_b[port] = bLED;
-                    return script.callReturn();
                 }
                 else
                     return script.callReturn();
@@ -1367,19 +1420,38 @@ Entry.ssboard_nano.getBlocks = function() {
                 const port = 4;//script.getNumberValue('PORT');
                 const ledmode = script.getNumberValue('VALUE', script);
 
-				
-								
-                if (!Entry.hw.sendQueue.SET) {
-                    Entry.hw.sendQueue.SET = {};
+				if (ledmode == 2) {
+                    for (var i = 0; i < 255; i++) {
+                        rgbled_r[i] = 0;
+                        rgbled_g[i] = 0;
+                        rgbled_b[i] = 0;
+                    }
                 }
-                Entry.hw.sendQueue.SET[port] = {
-                    type: Entry.ssboard_nano.sensorTypes.RGBLEDSHOW,
-                    data: {
-                        mode: ledmode,
-                    },
-                    time: new Date().getTime(),
-                };
-                return script.callReturn();
+				if (!script.isStart) {
+                    if (!Entry.hw.sendQueue.SET) {
+                        Entry.hw.sendQueue.SET = {};
+                    }
+                    Entry.hw.sendQueue.SET[port] = {
+                        type: Entry.ssboard_nano.sensorTypes.RGBLEDSHOW,
+                        data: {
+                            mode: ledmode,
+                        },
+                        time: new Date().getTime(),
+                    };
+                    script.isStart = true;  // 출력 시작 플래그 셋
+                    script.timeFlag = 1;    // 시간플래그 셋
+                    setTimeout(() => {
+                        script.timeFlag = 0;
+                    }, delay_time + 80 );
+                    return script;
+                } else if (script.timeFlag == 1) {
+                    return script;
+                } else {// 설정 시간이 지나면 출력 리셋
+                    delete script.timeFlag;
+                    delete script.isStart;
+                    Entry.engine.isContinue = false;
+                    return script.callReturn();
+                }
             },
             syntax: { js: [], py: [] },
         },
@@ -1410,7 +1482,7 @@ Entry.ssboard_nano.getBlocks = function() {
             def: {
                 params: [
                     {
-                        type: 'ssboard_nano_digital_port_list',      
+                        type: 'ssboard_nano_digital_out_port_list',      
                     },
                     {
                         type: 'ssboard_nano_digital_port_onoff_list',
@@ -1618,12 +1690,12 @@ Entry.ssboard_nano.getBlocks = function() {
             def: {
                 params: [
                     {
-                        type: 'ssboard_nano_ultrasonic_port_list',
-                        params: ['3'],
+                        type: 'ssboard_nano_digital_out_port_list',
+                        params: ['13'],
                     },			
                     {
-                        type: 'ssboard_nano_ultrasonic_port_list',
-                        params: ['4'],
+                        type: 'ssboard_nano_digital_out_port_list',
+                        params: ['5'],
                     },		
                     null,
                 ],
@@ -1710,7 +1782,7 @@ Entry.ssboard_nano.getBlocks = function() {
             def: {
                 params: [
                     {
-                        type: 'ssboard_nano_digital_port_list',
+                        type: 'ssboard_nano_digital_out_port_list',
                         params: ['14'],
                     },			
                     null,
